@@ -1,0 +1,1 @@
+import{u as a,a as t,b as r}from"./index-BMOxKQ2-.js";function d(i){const{revision:e}=a();return t(async o=>{const n=await r("/business-config/catalog",{signal:o}),s=n.find(u=>u.key==="dictionary."+i);if(!s?.published_version)throw Error("业务选项尚未发布");return r("/business-config/"+s.id+"/versions/"+s.published_version,{signal:o})},[i,e])}export{d as u};

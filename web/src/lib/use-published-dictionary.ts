@@ -1,0 +1,2 @@
+import {api} from './api';import {useApp,useResource,type Row} from './state';
+export function usePublishedDictionary(key:string){const {revision}=useApp();return useResource<Row>(async signal=>{const rows=await api<Row[]>('/business-config/catalog',{signal}),d=rows.find(c=>c.key==='dictionary.'+key);if(!d?.published_version)throw Error('业务选项尚未发布');return api('/business-config/'+d.id+'/versions/'+d.published_version,{signal});},[key,revision]);}

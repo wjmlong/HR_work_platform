@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { testDatabase, actor } from './helpers.js';
+import { Identity } from '../src/identity/service.js';
+import { FeishuProvider } from '../src/identity/provider.js';
+import { RecruitingHandoff } from '../src/sourcing-discovery/handoff.js';
+import { DiscoveryLeads } from '../src/sourcing-discovery/leads.js';
+test('handoff accepts one file once; actual followup required; confirmation is separate', async (t) => { const f = await testDatabase(); t.after(f.cleanup); const root = await mkdtemp(join(tmpdir(), 'discovery-handoff-')); t.after(() => rm(root, { recursive: true, force: true })); f.config.storageRoot = root; const a = await actor(f.db), identity = new Identity(f.db, f.config, new FeishuProvider(f.config)), s = new RecruitingHandoff(identity), leads = new DiscoveryLeads(identity); const job = (await f.db.query("INSERT INTO jobs(name) VALUES('自动化') RETURNING id")).rows[0], lead = (await f.db.query("INSERT INTO leads(name,org,direction,source,line,owner_id) VALUES('合成作者','待核实','自动化','其他','social',$1) RETURNING id", [a.id])).rows[0], j = (await f.db.query('INSERT INTO discovery_lead_jobs(lead_id,job_id,owner_id) VALUES($1,$2,$3) RETURNING id', [lead.id, job.id, a.id])).rows[0]; await assert.rejects(() => s.preview(a, j.id), /resume_required/); await leads.followup(a, j.id, { version: 1, kind: 'resume_received', note: '收到本人简历', occurredAt: new Date().toISOString() }); const preview = await s.preview(a, j.id); const input = { leadJobId: j.id, version: preview.version, previewToken: preview.previewToken, name: '合成简历.txt', data: Buffer.from('姓名：合成作者\n技能：Python，n8n') }; const r = await s.accept(a, input), again = await s.accept(a, input); assert.equal(r.handoffId, again.handoffId); assert.equal((await f.db.query("SELECT count(*) FROM tasks WHERE kind='ingest'")).rows[0].count, '1'); assert.equal((await f.db.query('SELECT state FROM discovery_lead_jobs WHERE id=$1', [j.id])).rows[0].state, 'resume_received'); await s.confirm(a, r.handoffId, 1); assert.equal((await f.db.query('SELECT state FROM discovery_lead_jobs WHERE id=$1', [j.id])).rows[0].state, 'uploaded'); });

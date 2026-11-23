@@ -1,0 +1,15 @@
+ALTER TABLE interviews ADD COLUMN primary_interviewer_id uuid REFERENCES users(id);
+ALTER TABLE interviews ADD COLUMN location text NOT NULL DEFAULT '';
+ALTER TABLE interviews ADD COLUMN meeting_url text NOT NULL DEFAULT '';
+ALTER TABLE interviews ADD COLUMN feedback text NOT NULL DEFAULT '';
+UPDATE interviews i SET primary_interviewer_id=x.user_id FROM (SELECT interview_id,(array_agg(user_id))[1] user_id FROM interviewers GROUP BY interview_id HAVING count(*)=1) x WHERE x.interview_id=i.id;
+ALTER TABLE interviews DROP CONSTRAINT interviews_status_check;
+UPDATE interviews SET status='pending' WHERE status='confirmed';
+UPDATE interviews SET status='legacy_completed' WHERE status='completed';
+ALTER TABLE interviews ADD CONSTRAINT interviews_status_check CHECK(status IN ('pending','passed','failed','cancelled','legacy_completed'));
+CREATE INDEX interviews_primary_outcome_idx ON interviews(primary_interviewer_id,status,starts_at DESC,id);
+ALTER TABLE evaluations ADD COLUMN last_editor_id uuid REFERENCES users(id);
+UPDATE evaluations SET last_editor_id=author_id;
+ALTER TABLE evaluation_versions ADD COLUMN editor_id uuid REFERENCES users(id);
+UPDATE evaluation_versions v SET editor_id=e.author_id FROM evaluations e WHERE e.id=v.evaluation_id;
+INSERT INTO schema_migrations(version) VALUES(8);

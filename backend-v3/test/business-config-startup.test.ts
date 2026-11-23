@@ -1,0 +1,16 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,rm} from 'node:fs/promises';import os from 'node:os';import path from 'node:path';
+import {testDatabase} from './helpers.js';import {Identity} from '../src/identity/service.js';import {Dictionary} from '../src/dictionary/service.js';import {RecruitingService} from '../src/recruiting/service.js';import {TaskService} from '../src/tasks/service.js';import {Worker} from '../src/tasks/worker.js';import {FileStore} from '../src/files/storage.js';
+test('cold synthetic identity ingestion can diagnose failures without returning internals to the browser',async t=>{
+ const f=await testDatabase();t.after(f.cleanup);const dir=await mkdtemp(path.join(os.tmpdir(),'config-cold-'));t.after(()=>rm(dir,{recursive:true,force:true}));f.config.storageRoot=dir;
+ f.config.feishu={...f.config.feishu,appId:'synthetic-app',tenant:'synthetic-company',admins:['ou_synthetic_admin']};
+ const principal={tenant:'synthetic-company',appId:'synthetic-app',openId:'ou_synthetic_admin',name:'合成验收管理员',active:true},provider={configured:()=>true,identity:async()=>principal,contact:async()=>principal,authorizeUrl:()=>''},identity=new Identity(f.db,f.config,provider);
+ await new Dictionary(f.db).seed();await identity.establish(principal);const a:any={...(await f.db.query('SELECT * FROM users WHERE open_id=$1',[principal.openId])).rows[0],csrf:''};
+ const r=new RecruitingService(identity),store=new FileStore(dir),tasks=new TaskService(identity,store),errors:unknown[]=[],worker=new Worker(identity,store,'cold-config-test',e=>errors.push(e));
+ const j=await r.createJob(a,{name:'合成算法工程师',level:'P6',department:'算法平台',salaryRange:'30-45k · 15 薪',marketSalary:'合成市场参考 35-50k',marketSource:'合成验收数据，无实际市场意义',requirements:{skills:['Python','PyTorch','Docker'],education:'master',experienceYears:3,experienceMaxYears:5,schoolPreferences:['合成大学'],description:'合成验收岗位'}});
+ const task=await tasks.upload(a,{name:'synthetic-cold.txt',data:Buffer.from('姓名：合成人才A\n电话：19900000000\n邮箱：synthetic0@example.invalid\n学历：硕士\n学校：合成大学\n本科院校：合成理工学院\n所在地：杭州\n公司：合成科技有限公司\n求职意向：算法工程师\n5年工作经验\n技能：Python、PyTorch、Docker\n项目：搭建可验证的合成训练流程，记录测试与误差来源，所有内容仅为系统验收。'),jobId:j.id,source:'合成内推'});while(await worker.once()){}
+ assert.equal((await tasks.get(a,task.id)).state,'succeeded',String((errors[0] as Error)?.stack||'no diagnostic'));
+ const bad=await tasks.upload(a,{name:'missing-synthetic.txt',data:Buffer.from('姓名：合成丢失文件'),jobId:j.id});const originalRead=store.read.bind(store);store.read=async()=>{throw Error('synthetic missing original')};while(await worker.once()){}store.read=originalRead;
+ assert.equal((await tasks.get(a,bad.id)).error_code,'processing_failed');assert.equal((errors.at(-1) as Error)?.message,'synthetic missing original');
+});
+
+test('HTTP startup publishes the configuration catalog before accepting its first business request',async t=>{const {testDatabase,httpSession}=await import('./helpers.js');const f=await testDatabase();t.after(f.cleanup);const {app}=await httpSession(f.db,f.config);t.after(()=>app.close());assert.equal(Number((await f.db.query("SELECT count(*) n FROM business_configs WHERE kind='fields'")).rows[0].n),7);assert.equal((await f.db.query('SELECT 1 FROM schema_migrations WHERE version=1003')).rowCount,1);});

@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { githubSearch, SearchService } from '../src/sourcing-discovery/search.js';
+import { testDatabase, actor } from './helpers.js';
+import { Identity } from '../src/identity/service.js';
+import { FeishuProvider } from '../src/identity/provider.js';
+import { DiscoveryTasks } from '../src/sourcing-discovery/tasks.js';
+import { DiscoveryQueue } from '../src/sourcing-discovery/queue.js';
+test('search imports only fetched public profile evidence, deduplicates owners and never invents contact',async()=>{
+ const calls:string[]=[];const rows=await githubSearch('n8n automation',3,async url=>{calls.push(url);return url.includes('/search/')?{items:[{html_url:'https://github.com/tester/flows',full_name:'tester/flows',description:'Python workflow automation',owner:{login:'tester',id:123,type:'User'}},{html_url:'https://github.com/tester/other',owner:{login:'tester',id:123,type:'User'}}]}:{id:123,login:'tester',type:'User',html_url:'https://github.com/tester',bio:'Automation developer',email:null};});
+ assert.equal(rows.length,1);assert.equal(calls.length,2);assert.equal(rows[0].entityType,'account');assert.equal(rows[0].accessMethod,'public_fetch');assert.match(rows[0].evidence[1].text,/Python workflow/);assert.match(rows[0].evidence[0].text,/未公开/);assert.equal(rows[0].nativeId,'github:123');assert.equal(rows[0].evidence[1].sourceUrl,'https://github.com/tester/flows');
+});
+test('search queue checks ACL/state/source and fences cancelled search results',async t=>{const f=await testDatabase();t.after(f.cleanup);const a=await actor(f.db),identity=new Identity(f.db,f.config,new FeishuProvider(f.config)),tasks=new DiscoveryTasks(identity),search=new SearchService(identity),queue=new DiscoveryQueue(identity);const job=(await f.db.query("INSERT INTO jobs(name) VALUES('合成') RETURNING id")).rows[0];const task=await tasks.create(a,{name:'真实搜索协议',jobId:job.id,sources:['other']});await tasks.action(a,task.id,{version:1,action:'start'});const q=await search.enqueue(a,task.id,{version:2,query:'n8n automation',limit:2,ai:false});const lease=await queue.claim('search-worker',false);assert.equal(lease?.id,q.id);await tasks.action(a,task.id,{version:2,action:'cancel'});await search.complete(lease!,[{platform:'other',nativeId:'github:123',displayName:'Synthetic',profileUrl:'https://github.com/tester',entityType:'account',accessMethod:'public_fetch',externalModelAllowed:false,evidence:[{id:'e1',text:'Python automation',sourceUrl:'https://github.com/tester',capturedAt:new Date().toISOString()}]}]);assert.equal((await f.db.query('SELECT count(*) FROM discovery_sources')).rows[0].count,'0');});

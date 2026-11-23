@@ -1,0 +1,16 @@
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS requirements_version int NOT NULL DEFAULT 1;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS salary_range text NOT NULL DEFAULT '';
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS market_salary text NOT NULL DEFAULT '';
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS market_source text NOT NULL DEFAULT '';
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS salary_note text NOT NULL DEFAULT '';
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS market_reference_date text NOT NULL DEFAULT '';
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS close_reason text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS closed_at timestamptz;
+UPDATE jobs SET requirements_version=version;
+ALTER TABLE jobs ADD CONSTRAINT jobs_level_check CHECK(level IS NULL OR level IN ('P4','P5','P6','P7','P8','P9','M1','M2','M3','专业服务'));
+ALTER TABLE jobs ADD CONSTRAINT jobs_market_source_check CHECK(market_salary='' OR market_source<>'');
+ALTER TABLE job_versions ADD COLUMN IF NOT EXISTS level text;
+ALTER TABLE job_versions ADD COLUMN IF NOT EXISTS internal_salary jsonb;
+CREATE TABLE job_salary_grants(job_id uuid NOT NULL REFERENCES jobs(id),user_id uuid NOT NULL REFERENCES users(id),granted_by uuid NOT NULL REFERENCES users(id),created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(job_id,user_id));
+CREATE INDEX job_salary_grants_user_idx ON job_salary_grants(user_id);
+INSERT INTO schema_migrations(version) VALUES(6);

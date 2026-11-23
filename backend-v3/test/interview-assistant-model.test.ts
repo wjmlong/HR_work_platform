@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {decodePcm,parseSpeech} from '../src/interview-assistant/model.js';
+test('rejects malformed and oversized audio before contacting provider',()=>{assert.throws(()=>decodePcm('!bad!'));assert.throws(()=>decodePcm(Buffer.alloc(700000).toString('base64')));assert.throws(()=>decodePcm(Buffer.alloc(3).toString('base64')));const b=decodePcm(Buffer.alloc(32000).toString('base64'));assert.equal(b.readUInt32LE(24),16000);assert.equal(b.subarray(0,4).toString(),'RIFF');});
+test('speech adapter accepts silence but rejects invented speaker metadata',()=>{assert.equal(parseSpeech('{"text":""}'),'');assert.equal(parseSpeech('{"text":"我负责重试模块"}'),'我负责重试模块');assert.throws(()=>parseSpeech('{"text":"abc","speaker":"candidate"}'));});

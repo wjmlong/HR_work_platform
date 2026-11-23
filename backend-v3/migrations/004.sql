@@ -1,0 +1,2 @@
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS note text NOT NULL DEFAULT '';
+INSERT INTO schema_migrations(version) VALUES(4) ON CONFLICT DO NOTHING;

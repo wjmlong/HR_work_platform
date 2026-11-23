@@ -1,0 +1,1 @@
+async function r(o,n){const e=[],s=[];for(const i of o){const t=await n(i);["queued","running"].includes(t.state)?e.push(i):s.push(t)}return{pending:e,completed:s}}function a(o){const n=o?.algorithmVersion;return n==="professional-config-1.0.0"?"公司自定义专业规则":n==="professional-4.0.0"||n==="professional-4.0.0-pinned.1"?"PRD 默认专业规则":"历史规则（口径未记录）"}export{a as c,r as o};

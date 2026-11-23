@@ -1,0 +1,50 @@
+{
+  "name": "recruit-backend-v3",
+  "version": "4.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test --test-concurrency=1 test/*.test.ts",
+    "start": "node dist/index.js",
+    "worker": "node dist/worker-main.js",
+    "db:local": "tsx scripts/local-db.ts",
+    "dev": "tsx watch src/index.ts",
+    "gateway": "node dist/gateway.js",
+    "backup": "node dist/operations/cli.js backup",
+    "restore": "node dist/operations/cli.js restore",
+    "migrate:legacy": "node dist/operations/cli.js migrate",
+    "test:nfr": "tsx --test test/nfr.test.ts",
+    "test:runtime": "tsx scripts/verify-runtime.ts",
+    "export:api": "tsx scripts/export-openapi.ts",
+    "worker:sourcing": "node dist/sourcing-discovery/worker-main.js"
+  },
+  "dependencies": {
+    "@larksuiteoapi/node-sdk": "1.76.0",
+    "@fastify/cookie": "11.1.3",
+    "@fastify/multipart": "10.1.3",
+    "@fastify/swagger": "9.9.2",
+    "@fastify/websocket": "11.3.7",
+    "fast-xml-parser": "5.11.2",
+    "fastify": "5.12.7",
+    "iconv-lite": "0.7.3",
+    "nodemailer": "10.6.0",
+    "pdfjs-dist": "6.4.299",
+    "pg": "8.23.1",
+    "ws": "8.22.2",
+    "yauzl": "3.4.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "@types/pg": "8.23.1",
+    "@types/ws": "8.18.2",
+    "@types/yauzl": "3.4.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}

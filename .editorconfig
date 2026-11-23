@@ -1,0 +1,30 @@
+# 统一编辑器行为，避免 Windows / macOS 之间反复产生「整文件改动」的假 diff
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+[*.js]
+indent_size = 2
+max_line_length = 120
+
+[*.json]
+indent_size = 2
+
+[*.html]
+indent_size = 2
+
+[*.md]
+# Markdown 里行尾两个空格是「强制换行」，不能删
+trim_trailing_whitespace = false
+
+[*.{sh,service,conf}]
+# shell / systemd / nginx 用 4 空格或 2 空格都不影响，但别用 tab
+indent_size = 2
+
+[Makefile]
+indent_style = tab

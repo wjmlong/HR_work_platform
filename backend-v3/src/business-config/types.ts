@@ -1,0 +1,28 @@
+import type {ChecklistTemplate,CcTemplate} from './checklist-template.js';
+import type {EvaluationTemplate} from './evaluation-template.js';
+import type {QuestionTemplate} from './question-template.js';
+import type {Role} from '../identity/service.js';
+import type {MatchTemplate} from './match-template.js';
+export type EntityKind='job'|'resume'|'application'|'interview'|'evaluation'|'lead'|'campus';
+export type ObjectRef={kind:EntityKind;id:string};
+export type DefinitionRef={configId:string;version:number};
+export type DictionaryOption={id:string;label:string;aliases:string[];active:boolean;order:number;rank?:number;coreCode?:string;category?:string};
+export type Predicate={fieldId:string;op:'eq'|'contains'|'range'|'empty'|'not_empty';value?:string|number|boolean|null|(string|number)[]};
+export type Condition=Predicate|{mode:'all'|'any';rules:Condition[]};
+export type FieldDefinition={
+ fieldId:string;coreKey?:string;type:'text'|'longtext'|'number'|'date'|'datetime'|'select'|'multiselect'|'boolean'|'money'|'money_range';
+ label:string;active:boolean;required:boolean;order:number;group:string;system:boolean;
+ description:string;placeholder:string;unit:string;defaultValue?:unknown;
+ constraints:{min?:number;max?:number;precision?:number;maxLength?:number};
+ options:DictionaryOption[];dictionaryKey?:string;visibleWhen?:Condition;requiredWhen?:Condition;
+ access:{read:Role[];write:Role[];export:Role[];sensitivity:'general'|'private'|'salary';public:boolean};
+ searchable:boolean;sortable:boolean;
+};
+export type FieldDocument={kind:'fields';entity:EntityKind;fields:FieldDefinition[]};
+export type DictionaryDocument={kind:'dictionary';entity:EntityKind;key:string;options:DictionaryOption[]};
+export type ConfigDocument=FieldDocument|DictionaryDocument|MatchTemplate|QuestionTemplate|EvaluationTemplate|ChecklistTemplate|CcTemplate;
+export type EffectiveDefinition={ref:DefinitionRef;fields:FieldDefinition[];entity:EntityKind;aclRevision:string};
+export type FieldValues=Record<string,unknown>;
+export type FieldWrite={definitionVersion:number;definitionRevision?:string;customFields:FieldValues;evidenceBasis?:string};
+export type PreviewReceipt={draftId:string;draftVersion:number;baseVersion:number;actorId:string;inputHash:string;impactHash:string;signature:string};
+export type ConfigDraft={id:string;configId:string;version:number;baseVersion:number;document:ConfigDocument;publishedVersion:number|null};

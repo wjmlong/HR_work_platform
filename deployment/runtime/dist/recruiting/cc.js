@@ -1,0 +1,16 @@
+import { fail } from '../http/errors.js';
+import { checklistStage, validateCcTemplate, resolveCcRecipients, ccRecordFromTemplate } from '../business-config/checklist-template.js';
+import { resolveJobTemplate, loadTemplate } from '../business-config/selections.js';
+import { assertObjectAccess } from '../business-config/access.js';
+import { requireRole } from '../identity/service.js';
+export async function ccOptions(identity, a, applicationId, stage, targetJobId) { requireRole(a, 'admin', 'manager', 'recruiter'); const app = await identity.applicationAccess(a, applicationId); if (targetJobId)
+    await assertObjectAccess(identity, a, { kind: 'job', id: targetJobId }, 'write', identity.db.sql); const s = await selectedCC(identity, identity.db.sql, targetJobId || app.job_id, stage); if (!s)
+    fail(422, 'invalid_stage'); const rows = (await identity.db.query("SELECT u.id,u.name,u.status='active' AND u.directory_active active FROM users u JOIN users caller ON caller.id=$2 WHERE u.id=ANY($1::uuid[]) AND u.tenant=caller.tenant AND u.app_id=caller.app_id", [s.doc.defaultMemberIds, a.id])).rows; return { template: { ...s.doc, ref: s.binding.templateRef }, recipients: s.doc.defaultMemberIds.map(id => rows.find(r => r.id === id) || { id, name: '不可选成员', active: false }), actualDelivery: 'not_verified', statement: '仅保存抄送与准备事项记录，不代表已发送或已送达。' }; }
+export async function selectedCC(identity, c, jobId, stage) { if (!checklistStage.safeParse(stage).success)
+    return null; const purpose = ('cc.' + stage), binding = await resolveJobTemplate(identity, c, jobId, purpose), doc = validateCcTemplate((await loadTemplate(identity, purpose, binding.templateRef, c)).document); return { binding, doc }; }
+export async function ccForTransition(identity, c, a, jobId, stage, input) { const selected = await selectedCC(identity, c, jobId, stage); if (!selected)
+    return { cc: null, snapshot: null, reminder: null }; const { doc, binding } = selected; if (input.interaction === 'drag')
+    return { cc: null, snapshot: null, reminder: { to: doc.departments, items: doc.items.filter(i => i.active).toSorted((a, b) => a.order - b.order).map(i => i.label), templateRef: binding.templateRef, defaultMethod: doc.defaultMethod } }; if (input.ccTemplateRef && (input.ccTemplateRef.configId !== binding.templateRef.configId || input.ccTemplateRef.version !== binding.templateRef.version))
+    fail(409, 'configuration_changed'); if (!input.ccTemplateRef && (!doc.key.endsWith('.default') || binding.templateRef.version > 1))
+    fail(409, 'client_update_required'); const recipients = await resolveCcRecipients(identity, a, input.ccRecipientIds ?? doc.defaultMemberIds, c), record = ccRecordFromTemplate({ ...doc, ref: binding.templateRef }, input.ccMethod ?? doc.defaultMethod, recipients); return { ...record, reminder: null }; }
+//# sourceMappingURL=cc.js.map

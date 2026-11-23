@@ -1,0 +1,26 @@
+import { z, parse, uuid } from '../http/validation.js';
+import { fail } from '../http/errors.js';
+import { ccMethods, stageCC } from '../recruiting/workflow.js';
+export const checklistStage = z.enum(['collecting', 'background_check', 'offered', 'hired']);
+export const ccMethod = z.enum(['both', 'feishu', 'email', 'oral', 'deferred']);
+const id = z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,99}$/), label = z.string().trim().min(1).max(300), department = label.refine(s => !/@|https?:\/\/|mailto:/i.test(s)), memberId = uuid.transform(v => v.toLowerCase());
+const item = z.object({ id, label, active: z.boolean().default(true), required: z.boolean().default(false), order: z.number().int().min(0).max(10000), department: department.default('人力'), instructions: z.string().max(2000).default('') }).strict();
+export const checklistDocumentSchema = z.object({ kind: z.literal('checklist'), entity: z.literal('application'), key: id, label, stage: checklistStage, description: z.string().max(2000).default(''), items: z.array(item).min(1).max(100) }).strict();
+export const ccDocumentSchema = z.object({ kind: z.literal('cc'), entity: z.literal('application'), key: id, label, stage: checklistStage, description: z.string().max(2000).default(''), departments: z.array(department).min(1).max(30), defaultMemberIds: z.array(memberId).max(50).default([]), defaultMethod: ccMethod.default('both'), instructions: z.string().max(3000).default(''), items: z.array(item).min(1).max(100) }).strict();
+function itemsValid(items) { if (new Set(items.map(i => i.id)).size !== items.length)
+    fail(422, 'duplicate_checklist_item'); if (!items.some(i => i.active))
+    fail(422, 'checklist_item_required'); for (const i of items)
+    if (!i.active && i.required)
+        fail(422, 'inactive_item_required'); }
+export function validateChecklistTemplate(input) { const d = parse(checklistDocumentSchema, input); if (!d.key.startsWith('checklist.' + d.stage + '.'))
+    fail(422, 'configuration_key_mismatch'); itemsValid(d.items); return d; }
+export function validateCcTemplate(input) { const d = parse(ccDocumentSchema, input); if (!d.key.startsWith('cc.' + d.stage + '.'))
+    fail(422, 'configuration_key_mismatch'); itemsValid(d.items); if (new Set(d.departments).size !== d.departments.length || new Set(d.defaultMemberIds).size !== d.defaultMemberIds.length)
+    fail(422, 'duplicate_cc_recipient'); return d; }
+export function defaultChecklistTemplates() { return checklistStage.options.map(stage => validateChecklistTemplate({ kind: 'checklist', entity: 'application', key: 'checklist.' + stage + '.default', stage, label: ({ collecting: '资料收集', background_check: '背调核对', offered: 'Offer 准备', hired: '入职准备' }[stage]) + '默认清单', description: '人工核对状态；不上传敏感附件，不自动推进招聘环节。', items: (stage === 'collecting' ? ['学历资料核对', '离职证明核对', '体检报告是否提供（仅记状态）'] : stageCC[stage].items).map((label, n) => ({ id: stage + '.item.' + n, label, active: true, required: true, order: n, department: '人力', instructions: '由有权人员核对；仅记录状态与依据，不上传敏感附件。' })) })); }
+export function defaultCcTemplates() { return checklistStage.options.map(stage => validateCcTemplate({ kind: 'cc', entity: 'application', key: 'cc.' + stage + '.default', stage, label: ({ collecting: '资料收集', background_check: '背调', offered: 'Offer', hired: '入职' }[stage]) + '默认抄送准备', departments: stageCC[stage].to, defaultMethod: 'both', defaultMemberIds: [], instructions: '仅记录准备事项与抄送安排；不会自动发送飞书或邮件。', items: stageCC[stage].items.map((label, n) => ({ id: stage + '.cc.' + n, label, active: true, required: false, order: n, department: stageCC[stage].to[0], instructions: '' })) })); }
+export async function resolveCcRecipients(identity, a, ids, c = identity.db.sql) { const selected = [...new Set(ids.map(v => v.toLowerCase()))]; if (!selected.length)
+    return []; const rows = (await c.query("SELECT u.id,u.name FROM users u JOIN users caller ON caller.id=$2 WHERE u.id=ANY($1::uuid[]) AND u.status='active' AND u.directory_active AND u.tenant=caller.tenant AND u.app_id=caller.app_id", [selected, a.id])).rows; if (rows.length !== selected.length)
+    fail(422, 'cc_recipient_invalid'); return selected.map(id => rows.find(r => r.id === id)); }
+export function ccRecordFromTemplate(input, method, recipients) { const { ref, ...plain } = input, template = validateCcTemplate(plain), actual = parse(ccMethod, method), items = template.items.filter(i => i.active).toSorted((a, b) => a.order - b.order).map(i => i.label + (i.instructions ? '：' + i.instructions : '')); return { cc: template.departments.join(' + ') + '（' + ccMethods[actual] + '）' + (actual === 'deferred' ? '（未实际抄送）' : ''), snapshot: { templateRef: ref || null, templateVersion: ref ? String(ref.version) : 'prd-20261019', to: template.departments, recipients: recipients.map(p => ({ id: p.id, name: p.name })), items, method: actual, instructions: template.instructions, actualDelivery: 'not_verified', statement: '仅记录抄送安排，未验证实际送达。' } }; }
+//# sourceMappingURL=checklist-template.js.map

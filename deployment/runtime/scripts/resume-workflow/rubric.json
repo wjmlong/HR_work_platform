@@ -1,0 +1,101 @@
+{
+  "id": "automation-fullstack-v1",
+  "version": 2,
+  "status": "draft",
+  "title": "全栈开发工程师（自动化方向）",
+  "description": "助手提出的初版权重，尚未经业务负责人批准；只作人工复核参考。",
+  "criteria": [
+    {
+      "id": "education",
+      "label": "本科及以上",
+      "weight": 5,
+      "rule": "仅依据原文学历；本科/硕士/博士满足，专科不满足；不得按学校名推断学历。",
+      "required": false
+    },
+    {
+      "id": "experience",
+      "label": "相关经验1–3年",
+      "weight": 5,
+      "rule": "明确写出1–3年相关工作经验满足；区间外partial不是不合格，缺失unknown；不按年龄/毕业年推算。",
+      "required": false
+    },
+    {
+      "id": "workflow",
+      "label": "自动化工具/自建引擎实战",
+      "weight": 25,
+      "rule": "n8n、Zapier、RAGFlow、ComfyUI、Make、Airflow任意一种具体项目实战，或有节点调度/状态/失败恢复等实现证据的自建Workflow引擎。单个Agent/RAG项目不等于工作流引擎，相关但不明确为unknown。只说熟悉某工具partial。对自建引擎，必须明确写出自建Workflow/工作流引擎且有实现证据；LangGraph/StateGraph/Agent Harness即使有状态和重试，如未明确引擎范围仍为unknown，留待面试核实。",
+      "required": true
+    },
+    {
+      "id": "backend",
+      "label": "后端语言与服务开发",
+      "weight": 10,
+      "rule": "Node.js/Python/Java任一种后端服务项目实战满足，技能声明partial。仅科学计算Python不等于后端服务。",
+      "required": true
+    },
+    {
+      "id": "frontend",
+      "label": "React/Vue前端开发",
+      "weight": 10,
+      "rule": "React/Vue至少一种具体开发项目满足，技能声明partial，其他前端框架不替代这项。技术栈里的Vue与泛泛的“配合管理页面”不能拼成本人Vue实战，只能partial；必须是本人明确使用该框架的项目职责。",
+      "required": true
+    },
+    {
+      "id": "database",
+      "label": "SQL/NoSQL设计",
+      "weight": 5,
+      "rule": "有数据库结构设计或实际开发/查询优化证据满足，仅列数据库名partial。",
+      "required": false
+    },
+    {
+      "id": "integration",
+      "label": "API与开放平台集成",
+      "weight": 10,
+      "rule": "具体第三方系统/API/开放平台对接满足，不要求飞书/企业微信/OAuth/Webhook全部掌握。内部方法调用不能替代。",
+      "required": false
+    },
+    {
+      "id": "delivery",
+      "label": "端到端交付",
+      "weight": 10,
+      "rule": "需求/设计/开发/测试/部署完整交付且说明个人职责满足，只覆盖部分阶段partial。缺少明确测试职责时只能partial；完整参与不是独立负责全部阶段，需要说明职责边界。",
+      "required": false
+    },
+    {
+      "id": "requirements",
+      "label": "模糊需求澄清",
+      "weight": 8,
+      "rule": "明确与业务方澄清、拆解需求并形成方案的案例满足；仅自述善沟通partial。系统/Agent主动向终端用户提问，不等于候选人与业务方澄清需求。只有“需求分析/梳理”不构成模糊需求澄清案例，按partial。",
+      "required": false
+    },
+    {
+      "id": "business",
+      "label": "业务系统理解",
+      "weight": 5,
+      "rule": "财务、进销存、ERP、OA等实际业务规则或集成经验满足；其他系统经验partial；不臆测好奇心。康复/旅游/教育/一般售后维保等其他业务系统，仅partial，不能因有订单或退款字眼就当作财务ERP实践。",
+      "required": false
+    },
+    {
+      "id": "documentation",
+      "label": "文档与组件沉淀",
+      "weight": 2,
+      "rule": "有文档/复用组件/团队赋能具体成果满足，只自述partial。",
+      "required": false
+    },
+    {
+      "id": "bonus",
+      "label": "加分实践",
+      "weight": 5,
+      "rule": "RPA、低代码、AI Agent、LLM、财务或供应链集成至少一项实际项目满足。",
+      "required": false
+    }
+  ],
+  "multipliers": {
+    "met": 1,
+    "partial": 0.5,
+    "not_met": 0,
+    "unknown": 0
+  },
+  "unknownPolicy": "已确认分按0计入下界，同时保留可补证上界；不把unknown标为不满足，不以总分自动淘汰。",
+  "noAutomaticDecision": true
+}

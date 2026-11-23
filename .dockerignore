@@ -1,0 +1,11 @@
+node_modules
+data
+.env
+.env.*
+.git
+work
+outputs
+*.zip
+*.log
+
+lab-private/

@@ -1,0 +1,1 @@
+import{r,j as e}from"./index-BaukzUPX.js";import{a as s,f as m}from"./date-time-DPfHz9Vy.js";function x({value:t,empty:a="—"}){const[i,n]=r.useState(Date.now);return r.useEffect(()=>{const o=setInterval(()=>n(Date.now()),6e4);return()=>clearInterval(o)},[]),t?e.jsx("time",{dateTime:t,title:m(t),children:s(t,i)}):e.jsx(e.Fragment,{children:a})}export{x as R};

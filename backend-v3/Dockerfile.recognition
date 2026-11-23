@@ -1,0 +1,5 @@
+FROM m.daocloud.io/docker.io/library/node@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv libreoffice-writer fonts-noto-cjk && rm -rf /var/lib/apt/lists/*
+COPY python/recognition/requirements.txt /tmp/recognition-requirements.txt
+RUN python3 -m venv /opt/recognition && /opt/recognition/bin/pip install --no-cache-dir -r /tmp/recognition-requirements.txt && rm /tmp/recognition-requirements.txt
+ENV RECRUIT_V4_RECOGNITION_PYTHON=/opt/recognition/bin/python

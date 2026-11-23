@@ -1,0 +1,25 @@
+{
+  "name": "recruit-workbench",
+  "version": "4.0.0",
+  "private": true,
+  "description": "招聘与人才搜集独立后端：SQL 多实例、直接飞书、人工业务流转",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "scripts": {
+    "start": "npm --prefix backend-v3 start",
+    "dev": "npm --prefix backend-v3 run dev",
+    "build": "npm --prefix web run build && npm --prefix backend-v3 run build",
+    "test": "npm --prefix web test && npm --prefix backend-v3 test",
+    "typecheck": "npm --prefix web run typecheck && npm --prefix backend-v3 run typecheck",
+    "validate": "npm run typecheck && npm test && npm run build",
+    "start:gateway": "npm --prefix backend-v3 run gateway",
+    "start:worker": "npm --prefix backend-v3 run worker",
+    "backup": "npm --prefix backend-v3 run backup",
+    "test:nfr": "npm --prefix backend-v3 run test:nfr",
+    "test:runtime": "npm --prefix backend-v3 run test:runtime",
+    "export:api": "npm --prefix backend-v3 run export:api",
+    "dev:web": "npm --prefix web run dev"
+  }
+}

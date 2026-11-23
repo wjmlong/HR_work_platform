@@ -1,0 +1,61 @@
+/* Compact candidate board: five real cards per scroll viewport, no placeholders. */
+.board-statistics { margin: 0 0 12px; border: 1px solid #ddcfba; border-radius: 12px; background: #fffaf3c9; }
+.board-metrics-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; align-items: center; padding: 14px 8px; }
+.board-metric { min-width: 0; padding: 0 16px; }
+.board-metrics-summary .board-metric + .board-metric { border-left: 1px solid #e9ddcc; }
+.board-metric small { display: block; color: #746653; font-size: 12px; margin-bottom: 6px; }
+.board-metric strong { color: #493d30; font-size: 28px; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.board-metrics-summary .board-metric:nth-child(2) strong { color: #4670a4; }
+.board-metrics-summary .board-metric:nth-child(3) strong { color: #a46c20; }
+.board-metrics-summary .board-metric:nth-child(5) strong { color: #397b59; }
+.board-metrics-toggle { display: flex; align-items: center; gap: 8px; white-space: nowrap; margin: 0 12px; }
+.board-metrics-extra:not([hidden]) { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 0; padding: 16px 8px; border-top: 1px solid #e9ddcc; }
+.board-metrics-extra .board-metric strong { font-size: 22px; }
+.board-statistics + .dashboard-warnings { margin-bottom: 10px; padding: 8px 12px; }
+.board.dashboard-board { --card-height: 72px; --card-gap: 6px; display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: max(194px, calc((100% - 30px) / 6)); gap: 6px; align-items: stretch; min-height: 0; margin-top: 10px; padding-bottom: 8px; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #bcb4a7 transparent; }
+.dashboard-board .board-column { min-width: 0; min-height: 0; padding: 8px; border: 1px solid #e4d8c6; border-radius: 10px; background: #f8f2e780; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.dashboard-board .board-column > header { height: 42px; padding: 2px 6px 10px; align-items: center; gap: 6px; background: transparent; border: 0; }
+.dashboard-board .board-column > header strong { font-size: 14px; }
+.dashboard-board .board-column > header span { font-size: 12px; min-width: 24px; text-align: center; }
+.dashboard-board .board-cards { height: calc(var(--card-height) * 5 + var(--card-gap) * 4); padding: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior-y: contain; scrollbar-width: thin; scrollbar-color: #bcb4a7 transparent; scrollbar-gutter: stable; }
+.dashboard-board .board-candidate { display: flex; flex-direction: column; justify-content: center; align-items: stretch; gap: 4px; width: 100%; height: var(--card-height); min-height: var(--card-height); margin: 0 0 var(--card-gap); padding: 10px 12px; border: 1px solid #ede4d6; border-radius: 9px; background: #fffdf9; box-shadow: none; text-align: left; cursor: pointer; color: #3d352b; white-space: normal; }
+.dashboard-board .board-candidate:last-child { margin-bottom: 0; }
+.dashboard-board .board-candidate:hover { background: #fff9ee; border-color: #bca17b; transform: none; }
+.dashboard-board .board-candidate:focus-visible, .dashboard-board .board-cards:focus-visible { outline: 2px solid #8b6b43; outline-offset: -2px; }
+.dashboard-board .board-candidate-name { font-size: 15px; font-weight: 600; line-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dashboard-board .board-candidate-job { color: #756651; font-size: 12px; line-height: 17px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.dashboard-board .board-cards .empty { padding: 60px 0; border: 0; background: transparent; color: #817563; font-size: 12px; }
+.board-column-footer { height: 30px; padding-top: 10px; color: #817563; font-size: 10px; white-space: nowrap; }
+.board-help { margin: 4px 0 16px; font-size: 12px; color: #817563; }
+@media (max-width: 700px) {
+  .board-metrics-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 0; }
+  .board-metric { padding: 0 10px; }
+  .board-metric strong { font-size: 24px; }
+  .board-metrics-summary .board-metric:nth-child(4) { border-left: 0; }
+  .board-metrics-toggle { margin: 0; justify-content: center; }
+  .board-metrics-extra:not([hidden]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .board.dashboard-board { grid-auto-columns: min(240px, 85vw); }
+}
+
+/* Keep the filters on one row so the five-card viewport fits ordinary laptops. */
+.main-content:has(.dashboard-board) { padding-top: 22px; }
+.main-content:has(.dashboard-board) > .page-heading { align-items: center; gap: 16px; margin-bottom: 16px; }
+.main-content:has(.dashboard-board) > .page-heading h1 { font-family: inherit; font-size: 28px; font-weight: 600; line-height: 1.3; }
+.main-content:has(.dashboard-board) > .page-heading > .toolbar { display: flex; flex-wrap: nowrap; width: auto; max-width: none; padding-top: 0; }
+.main-content:has(.dashboard-board) > .page-heading input { width: 220px; min-width: 0; }
+.main-content:has(.dashboard-board) > .page-heading select { width: 180px; min-width: 0; }
+@media (max-width: 900px) {
+  .main-content:has(.dashboard-board) > .page-heading { flex-wrap: wrap; }
+  .main-content:has(.dashboard-board) > .page-heading > .toolbar { width: 100%; }
+  .main-content:has(.dashboard-board) > .page-heading input { flex: 1; width: 50%; }
+  .main-content:has(.dashboard-board) > .page-heading select { flex: 1; width: 50%; }
+}
+
+.main-content:has(.dashboard-board) > .page-heading > .toolbar { flex-wrap: wrap; }
+@media (max-width: 1050px) {
+  .board-metrics-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 0; }
+  .main-content:has(.dashboard-board) > .page-heading > .toolbar { width: 100%; }
+  .main-content:has(.dashboard-board) > .page-heading input, .main-content:has(.dashboard-board) > .page-heading select { flex: 1 1 160px; width: auto; }
+  .board.dashboard-board.single-stage .board-cards { height: auto; max-height: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr)); gap: 8px; overflow: visible; }
+  .dashboard-board.single-stage .board-candidate { height: auto; min-height: 72px; margin: 0; }
+}

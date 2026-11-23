@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {validateAnalysis, type TranscriptSegment} from '../src/interview-assistant/contracts.js';
+const segments:TranscriptSegment[]=[{id:'s1',sequence:1,source:'meeting',speaker:'candidate',text:'我独立做过自动化项目',startMs:0,endMs:5000},{id:'s2',sequence:2,source:'microphone',speaker:'interviewer',text:'失败如何重试？',startMs:5000,endMs:8000}];
+const valid=()=>({suggestions:[{dimensionId:'professional',question:'触发条件是什么、接了哪些系统、失败如何重试、本人具体负责什么？',reason:'需要核实具体项目职责',evidence:[{segmentId:'s1',quote:'我独立做过自动化项目'}]}],dimensions:[{dimensionId:'professional',status:'evidence',summary:'候选人提及独立自动化项目，具体职责仍待核实',evidence:[{segmentId:'s1',quote:'我独立做过自动化项目'}]}],nextSteps:['追问具体流程和本人职责']});
+test('accepts specific followup backed by exact candidate words',()=>assert.equal(validateAnalysis(valid(),segments,['professional']).suggestions.length,1));
+test('rejects fabricated quote and nonexistent segment',()=>{for(const e of [{segmentId:'s1',quote:'熟练运用n8n'},{segmentId:'missing',quote:'我独立做过自动化项目'}]){const v=valid();v.dimensions[0].evidence=[e];assert.throws(()=>validateAnalysis(v,segments,['professional']),/citation/);}});
+test('interviewer or unknown role is not candidate evidence',()=>{for(const speaker of ['interviewer','unknown'] as const)assert.throws(()=>validateAnalysis(valid(),[{...segments[0],speaker}],['professional']),/speaker/);});
+test('requires each configured dimension exactly once',()=>{assert.throws(()=>validateAnalysis(valid(),segments,['professional','communication']),/coverage/);const v=valid();v.dimensions.push(v.dimensions[0]);assert.throws(()=>validateAnalysis(v,segments,['professional']),/coverage/);});
+test('uncovered dimension must have no evidence and evidence status needs citations',()=>{const v=valid();v.dimensions[0].evidence=[];assert.throws(()=>validateAnalysis(v,segments,['professional']),/evidence/);});
+test('rejects automated score and hiring conclusion fields',()=>assert.throws(()=>validateAnalysis({...valid(),score:95,conclusion:'hire'},segments,['professional'])));
+test('empty transcript cannot produce evidence even when a resume mentions skills',()=>assert.throws(()=>validateAnalysis(valid(),[],['professional']),/citation/));

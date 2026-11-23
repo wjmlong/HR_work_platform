@@ -1,0 +1,79 @@
+# ---------- 依赖 ----------
+node_modules/
+package-lock.json.bak
+npm-debug.log*
+yarn-error.log*
+
+# ---------- 运行时数据（**绝不入库**）----------
+# 这里含候选人个人信息、账号密码哈希、会话密钥、审计日志
+# 注意写法：先忽略目录内全部内容，再单独放行 .gitkeep
+#（直接写 data/ 会让 !data/.gitkeep 失效 —— git 不会进入已忽略的目录）
+data/*
+!data/.gitkeep
+
+# 单独兜一层，防止有人把 data 改名后误提交
+db.json
+db.prev.json
+db.corrupt.*.json
+users.json
+db.rev.json
+.writer-lock/
+初始登录密码.txt
+.db.dev-session-secret
+.dev-session-secret
+
+# ---------- 配置与密钥 ----------
+.env
+.env.local
+.env.*.local
+
+# ---------- 日志 ----------
+*.log
+logs/
+
+# ---------- 打包产物 ----------
+*.zip
+*.tar.gz
+*.tgz
+
+# ---------- 编辑器 / 系统 ----------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+lab-private/
+
+# 私有履历资料与运行产物
+seed/
+tests/_real/
+tests/_real2/
+*.dump
+*.pem
+*.key
+__pycache__/
+test-results/
+playwright-report/
+qa/*-schema.json
+
+# Also ignore dependency-directory symlinks used for local verification.
+node_modules
+.impeccable/
+
+# Generated LAN client packages include the current DHCP address; rebuild on deployment.
+public/lan/
+backend-v3/web-dist/
+
+# Local deployment credentials and generated state
+.env*
+!.env.example
+node_modules/
+/private/
+*.dump
+*.key
+*.log
+*.bak*
+!deployment/runtime/dist/
+!deployment/runtime/web-dist/

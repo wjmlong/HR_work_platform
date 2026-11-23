@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp,rm} from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {testDatabase,actor} from './helpers.js';
+import {Identity} from '../src/identity/service.js';
+import {FeishuProvider} from '../src/identity/provider.js';
+import {FileStore} from '../src/files/storage.js';
+import {RecruitingService} from '../src/recruiting/service.js';
+import {BusinessConfigService} from '../src/business-config/service.js';
+import {encodeRaw} from '../src/parsing/profile.js';
+import {replayRecognitions} from '../src/operations/recognition-replay.js';
+
+test('fresh replay replaces current facts and scores, preserves workflow/history, and is idempotent',async t=>{
+ const f=await testDatabase(),dir=await mkdtemp(path.join(os.tmpdir(),'recognition-replay-'));t.after(async()=>{await f.cleanup();await rm(dir,{recursive:true,force:true});});
+ const admin=await actor(f.db),identity=new Identity(f.db,f.config,new FeishuProvider(f.config)),store=new FileStore(dir),recruiting=new RecruitingService(identity);await new BusinessConfigService(identity).seed();
+ const job=await recruiting.createJob(admin,{name:'分析师',level:'P5',requirements:{skills:['Excel']}}),candidate=await recruiting.createCandidate(admin,{name:'旧姓名',location:'人工保留地点',intent:'简历',skills:['Python']});
+ const raw='姓名：测试甲\n技能：Excel\n本科 甲大学',file=await store.put('fixture.txt',Buffer.from(raw));
+ const doc=(await f.db.query("INSERT INTO resume_documents(sha256,blob_key,file_name,kind,file_size,owner_id) VALUES($1,$1,'fixture.txt','txt',$2,$3) RETURNING id",[file.sha256,file.size,admin.id])).rows[0];
+ const parse=(await f.db.query("INSERT INTO parse_results(document_id,raw_bytes,profile,evidence,parser_version,human_corrections) VALUES($1,$2,$3,'[]','rules',$4) RETURNING id",[doc.id,encodeRaw(raw),candidate.profile,JSON.stringify([{field:'intent',value:'简历',actorId:admin.id}])])).rows[0];
+ const resume=(await f.db.query('INSERT INTO resume_versions(candidate_id,parse_result_id,created_by) VALUES($1,$2,$3) RETURNING id',[candidate.id,parse.id,admin.id])).rows[0];
+ const app=await recruiting.apply(admin,{candidateId:candidate.id,jobId:job.id,resumeVersionId:resume.id});
+ await f.db.query("UPDATE applications SET status='interviewing',note='保持进度' WHERE id=$1",[app.id]);
+ const results=new Map([[file.sha256,{id:file.sha256,source_sha256:file.sha256,status:'ok',source_text:raw,prediction:{document_type:'resume',profile:{name:'测试甲',skills:['Excel'],education:'bachelor',school:'甲大学'},evidence:[{field:'name',quote:'测试甲'},{field:'skills',quote:'Excel'},{field:'education',quote:'本科'},{field:'school',quote:'甲大学'}],warnings:[]}}]]);
+ const preview=await replayRecognitions(identity,store,results,{runId:'fixture-replay'});assert.equal(preview.resumes,1);assert.equal(preview.applied,false);
+ await assert.rejects(replayRecognitions(identity,store,results,{runId:'fixture-replay',apply:true,fingerprint:'stale'}),/replay_preview_stale/);
+ const applied=await replayRecognitions(identity,store,results,{runId:'fixture-replay',apply:true,fingerprint:preview.fingerprint});assert.equal(applied.updatedCandidates,1);assert.equal(applied.refreshedApplications,1);
+ const current=(await f.db.query('SELECT * FROM candidates WHERE id=$1',[candidate.id])).rows[0];assert.equal(current.profile.name,'测试甲');assert.equal(current.profile.intent,'');assert.equal(current.profile.location,'人工保留地点');assert.deepEqual(current.profile.skills,['Excel']);
+ const updated=(await f.db.query('SELECT * FROM applications WHERE id=$1',[app.id])).rows[0];assert.equal(updated.status,'interviewing');assert.equal(updated.note,'保持进度');assert.equal(updated.job_id,job.id);assert.notEqual(updated.resume_version_id,resume.id);
+ assert.equal((await f.db.query('SELECT profile FROM parse_results WHERE id=$1',[parse.id])).rows[0].profile.name,'旧姓名');
+ assert.equal((await f.db.query('SELECT actor_id FROM candidate_profile_versions WHERE candidate_id=$1 ORDER BY version DESC LIMIT 1',[candidate.id])).rows[0].actor_id,null,'automated extraction is not a human intent confirmation');
+ assert.deepEqual(await replayRecognitions(identity,store,results,{runId:'fixture-replay',apply:true,fingerprint:preview.fingerprint}),applied);
+});

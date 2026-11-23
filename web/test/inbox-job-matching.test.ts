@@ -3,8 +3,18 @@ import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
 import React,{act} from 'react';
 import {createRoot} from 'react-dom/client';
-import CandidateCollection from '../src/features/CandidateCollection.tsx';
+import {registerHooks} from 'node:module';
 import {Context} from '../src/lib/state.tsx';
+
+registerHooks({
+  load(url, context, next) {
+    if (url.endsWith('.css')) {
+      return {format:'module', source:'', shortCircuit:true};
+    }
+    return next(url, context);
+  },
+});
+const {default: CandidateCollection} = await import('../src/features/CandidateCollection.tsx');
 
 const recommended={id:'fixture-one',created_at:'2026-11-16T00:00:00Z',profile:{name:'合成甲',intent:'简历',skills:['Python']},inboxMatch:{kind:'recommended',jobId:'backend',jobName:'后端工程师',label:'AI推荐',intent:'',evidence:[{source:'resume',quote:'负责 Python 服务开发和数据库优化，独立维护支付服务。'}]}};
 const pending={id:'fixture-two',created_at:'2026-11-16T00:00:00Z',profile:{name:'合成乙',intent:''},inboxMatch:{kind:'pending',label:'岗位待确认',intent:'',reason:'no_match'}};
